@@ -1,0 +1,35 @@
+[2025-08-20 10:58:18] INFO MSN Chat clone server (SQLite) on http://localhost:4000
+[2025-08-20 10:58:18] INFO MSN Chat clone server (SQLite) on http://localhost:4000
+[2025-08-20 10:58:20] INFO Connect: Anon-56414 (275b1aeb-4aac-4998-a062-f14cb4812698) ip=::1
+[2025-08-20 10:58:36] INFO Disconnect: Anon-56414 (275b1aeb-4aac-4998-a062-f14cb4812698)
+[2025-08-20 10:58:43] INFO Connect: Anon-04707 (ad0098aa-39a2-47f2-a4c1-5b4455486654) ip=::1
+[2025-08-20 10:58:47] INFO Admin Admin logged in
+[2025-08-20 10:58:48] INFO MSN Chat clone server (SQLite) on http://localhost:4000
+[2025-08-20 10:58:48] INFO Connect: Anon-83061 (14faed41-496d-4027-8f32-c613d3fc8dc6) ip=::1
+[2025-08-20 10:59:12] INFO Room created: tet (20b4a6f1-2413-4f86-940f-c5d7eeb8a8b2) by Anon-83061
+[2025-08-20 10:59:47] INFO MSN Chat clone server (SQLite) on http://localhost:4000
+[2025-08-20 10:59:49] INFO Connect: Anon-39928 (243d2415-a93e-45c8-b415-3d42e89b4f40) ip=::1
+[2025-08-20 10:59:49] INFO Join: test joined room tet
+[2025-08-20 11:00:02] INFO Message: test in room 20b4a6f1-2413-4f86-940f-c5d7eeb8a8b2: prova
+[2025-08-20 11:00:42] INFO MSN Chat clone server (SQLite) on http://localhost:4000
+[2025-08-20 11:00:44] INFO Connect: Anon-38939 (647c3109-8a55-45d7-85f1-61c3eb2bf5bf) ip=::1
+[2025-08-20 11:00:44] INFO AFK: Anon-38939 set AFK=true
+[2025-08-20 11:00:44] INFO AFK: Anon-38939 set AFK=false
+[2025-08-20 11:00:55] INFO Admin Admin logged in
+[2025-08-20 11:01:14] INFO Connect: Anon-04803 (5e1945fb-e905-4172-9619-588186ad1156) ip=::1
+[2025-08-20 11:01:23] INFO Admin Admin logged in
+[2025-08-20 11:01:35] INFO Join: aaa joined room tet
+[2025-08-20 11:01:53] INFO Connect: Anon-51839 (33952c40-f009-4ff0-96f1-cf8d069cbe79) ip=::1
+[2025-08-20 11:01:57] INFO Join: bbb joined room tet
+[2025-08-20 11:02:01] INFO Message: bbb in room 20b4a6f1-2413-4f86-940f-c5d7eeb8a8b2: ciao ragass
+[2025-08-20 11:02:05] INFO Message: aaa in room 20b4a6f1-2413-4f86-940f-c5d7eeb8a8b2: weee
+[2025-08-20 11:02:16] INFO Role change: bbb (33952c40-f009-4ff0-96f1-cf8d069cbe79) user → sysop
+[2025-08-20 11:03:57] WARN Kick: aaa (5e1945fb-e905-4172-9619-588186ad1156) from room 20b4a6f1-2413-4f86-940f-c5d7eeb8a8b2
+[2025-08-20 11:04:07] INFO Join: fuckyou joined room tet
+[2025-08-20 11:04:13] INFO Message: fuckyou in room 20b4a6f1-2413-4f86-940f-c5d7eeb8a8b2: :-)
+[2025-08-20 11:04:25] INFO Message: bbb in room 20b4a6f1-2413-4f86-940f-c5d7eeb8a8b2: you son of bitch
+[2025-08-20 11:04:52] INFO Message: fuckyou in room 20b4a6f1-2413-4f86-940f-c5d7eeb8a8b2: aa
+[2025-08-20 11:07:09] INFO MSN Chat clone server (SQLite) on http://localhost:4000
+[2025-08-20 11:07:09] INFO Connect: Anon-94923 (2e3aa3aa-d45a-462c-a48c-682d2b2b3e1d) ip=::1
+[2025-08-20 11:07:09] INFO Connect: Anon-52688 (6f870046-ee1f-4857-94e7-45c38519b10a) ip=::1
+[2025-08-20 11:07:09] INFO Connect: Anon-89216 (be4fca1b-6cad-4d41-8611-3b3d87fc3014) ip=::1
