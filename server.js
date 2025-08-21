@@ -369,6 +369,12 @@ io.on('connection', async (socket)=>{
     if(role==='user'){ await db.run('DELETE FROM room_roles WHERE room_id=? AND user_id=?',[srec.roomId,targetUserId]); }
     else { await db.run('INSERT OR REPLACE INTO room_roles (room_id,user_id,role) VALUES (?,?,?)',[srec.roomId,targetUserId,role]); }
     if(target.roomId===srec.roomId){ target.effectiveRole=userEffectiveRole(target.globalRole, role==='user'?'user':role); }
+    if(['owner','mod'].includes(role)){
+      const txt=role==='owner'
+        ? `${target.username} è stato nominato owner`
+        : `${target.username} è stato nominato moderatore`;
+      io.to(srec.roomId).emit('chat:system',{ text:txt, kind:'info', ts:Date.now() });
+    }
     io.to(srec.roomId).emit('room:user_list', await buildUserList(srec.roomId));
   });
 
