@@ -31,6 +31,9 @@ const DB_FILE = process.env.DB_FILE || './data/berrychat.db';
 fs.mkdirSync('./data', { recursive: true });
 const db = await open({ filename: DB_FILE, driver: sqlite3.Database });
 await db.exec('PRAGMA journal_mode = WAL');
+try {
+  await db.exec('ALTER TABLE rooms ADD COLUMN owner_password TEXT');
+} catch {}
 
 const UPLOAD_DIR = './uploads'; fs.mkdirSync(UPLOAD_DIR,{recursive:true});
 const storage = multer.diskStorage({
@@ -191,8 +194,8 @@ io.on('connection', async (socket)=>{
     const srec=srecOrExit(socket,'room:create'); if(!srec) return;
     const trimmed=String(name||'').trim(); if(!trimmed) return socket.emit('error',{message:'Room name required'});
     const id=uuidv4(); const plain=randomRoomPassword(); const hash=await argon2.hash(plain,{type:argon2.argon2id});
-    await db.run('INSERT INTO rooms (id,name,description,owner_password_hash,created_by,created_at) VALUES (?,?,?,?,?,?)',
-      [id,trimmed,String(description||'').trim(),hash,srec.userId,Date.now()]);
+    await db.run('INSERT INTO rooms (id,name,description,owner_password,owner_password_hash,created_by,created_at) VALUES (?,?,?,?,?,?,?)',
+      [id,trimmed,String(description||'').trim(),plain,hash,srec.userId,Date.now()]);
     await db.run('INSERT INTO room_roles (room_id,user_id,role) VALUES (?,?,?)',[id,srec.userId,'owner']);
     if(srec.roomId){ presence.get(srec.roomId)?.delete(socket.id); socket.leave(srec.roomId); }
     ensurePresence(id).add(socket.id);
@@ -224,7 +227,7 @@ io.on('connection', async (socket)=>{
     else if(roomName){ room=await db.get('SELECT * FROM rooms WHERE name=?',[roomName]); }
     if(!room && createIfMissing){
       const id=uuidv4(); const plain=randomRoomPassword(); const hash=await argon2.hash(plain,{type:argon2.argon2id});
-      await db.run('INSERT INTO rooms (id,name,description,owner_password_hash,created_by,created_at) VALUES (?,?,?,?,?,?)',[id,roomName,'',hash,srec.userId,Date.now()]);
+      await db.run('INSERT INTO rooms (id,name,description,owner_password,owner_password_hash,created_by,created_at) VALUES (?,?,?,?,?,?,?)',[id,roomName,'',plain,hash,srec.userId,Date.now()]);
       await db.run('INSERT INTO room_roles (room_id,user_id,role) VALUES (?,?,?)',[id,srec.userId,'owner']);
       room=await db.get('SELECT * FROM rooms WHERE id=?',[id]);
       socket.emit('room:owner_password',{roomId:id,password:plain});
@@ -243,6 +246,10 @@ io.on('connection', async (socket)=>{
     // send last 50 messages history
     const hist = await db.all('SELECT id,user_name as fromName,user_role as fromRole,text,kind,ts FROM messages WHERE room_id=? ORDER BY ts DESC LIMIT 50', [room.id]);
     socket.emit('chat:history', hist.reverse().map(m => (m.kind==='chat'? { id:m.id, from:{ name:m.fromName||'system', role:m.fromRole||'user' }, text:m.text, ts:m.ts } : { id:m.id, system:true, text:m.text, kind:m.kind, ts:m.ts })));
+
+    if(rankOfRole(srec.effectiveRole) >= rankOfRole('owner') && room.owner_password){
+      socket.emit('room:owner_password',{roomId:room.id,password:room.owner_password});
+    }
 
     // broadcast join
     const txt=`${u.username} è entrato nella stanza`;
@@ -266,12 +273,12 @@ io.on('connection', async (socket)=>{
   // OWNER CLAIM
   socket.on('room:owner_claim', async ({roomId,password})=>{
     const srec=srecOrExit(socket,'room:owner_claim'); if(!srec) return;
-    const r=await db.get('SELECT owner_password_hash,name FROM rooms WHERE id=?',[roomId]);
+    const r=await db.get('SELECT owner_password_hash,owner_password,name FROM rooms WHERE id=?',[roomId]);
     if(!r) return socket.emit('error',{message:'Room not found'});
     const ok=await argon2.verify(r.owner_password_hash, String(password||'')); if(!ok) return socket.emit('error',{message:'Password errata'});
     await db.run('INSERT OR REPLACE INTO room_roles (room_id,user_id,role) VALUES (?,?,?)',[roomId,u.id,'owner']);
     srec.effectiveRole=userEffectiveRole(srec.globalRole,'owner');
-    socket.emit('room:owner_password',{roomId,password});
+    socket.emit('room:owner_password',{roomId,password:r.owner_password});
     io.to(roomId).emit('room:user_list', await buildUserList(roomId));
   });
 
