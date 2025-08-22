@@ -14,6 +14,15 @@ import multer from 'multer';
 import path from 'path';
 import { encrypt, decrypt } from './encryption.js';
 
+// Ignore spurious watch mode errors where filename is null
+process.on('uncaughtException', (err) => {
+  if (err?.code === 'ERR_INVALID_ARG_TYPE' && err.message?.includes('paths[1]')) {
+    logger.warn(`Ignoring watch mode error: ${err.message}`);
+    return;
+  }
+  throw err;
+});
+
 const app = express();
 app.use(cors());
 app.use(express.json());
