@@ -17,6 +17,15 @@ import { encrypt, decrypt } from './encryption.js';
 const app = express();
 app.use(cors());
 app.use(express.json());
+// Log every incoming request
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info(`${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
+  });
+  next();
+});
 app.use('/uploads', express.static('./uploads'));
 
 const server = http.createServer(app);
@@ -176,6 +185,8 @@ const rankOfRole = r => ROLE_RANK_MAP[r] || 1;
 
 // ---------- SOCKET EVENTS ----------
 io.on('connection', async (socket)=>{
+  logger.info(`Socket connected ${socket.id}`);
+  socket.onAny((event) => logger.info(`Socket ${socket.id} event ${event}`));
   const u = socket.data.user;
   sockets.set(socket.id, { userId:u.id, username:u.username, gender:u.gender, globalRole:u.global_role,
     effectiveRole:u.global_role, roomId:null, afk:false, blocked:new Set(), msgBurst:{count:0,ts:Date.now()} });
@@ -416,6 +427,7 @@ io.on('connection', async (socket)=>{
   });
 
   socket.on('disconnect', async ()=>{
+    logger.info(`Socket disconnected ${socket.id}`);
     const srec=sockets.get(socket.id); if(!srec) return;
     if(srec.roomId){ presence.get(srec.roomId)?.delete(socket.id); io.to(srec.roomId).emit('room:user_list', await buildUserList(srec.roomId)); }
     sockets.delete(socket.id);
