@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 // Simple client example showing how to display room owner password
-const socket = io('http://localhost:4000');
+const socket = io('https://localhost:4000');
 
 socket.on('room:owner_password', ({ roomId, password }) => {
   console.log(`Owner password for room ${roomId}: ${password}`);
