@@ -254,7 +254,7 @@ io.on('connection', async (socket)=>{
     // broadcast join
     const txt=`${u.username} è entrato nella stanza`;
     io.to(room.id).emit('chat:system',{ text:txt, kind:'info', ts:Date.now() });
-    io.to(roomId).emit('room:user_list', await buildUserList(roomId));
+    io.to(room.id).emit('room:user_list', await buildUserList(room.id));
 
   });
 
