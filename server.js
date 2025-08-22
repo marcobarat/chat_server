@@ -260,15 +260,19 @@ io.on('connection', async (socket)=>{
 
   // LEFT
   socket.on('room:disconnection', async ({roomId,roomName})=>{
-    const srec=srecOrExit(socket,'room:left'); if(!srec) return;
-    let room=null;
-    if(roomId){ room=await db.get('SELECT * FROM rooms WHERE id=?',[roomId]); }
-    else if(roomName){ room=await db.get('SELECT * FROM rooms WHERE name=?',[roomName]); }
+    const srec = srecOrExit(socket,'room:disconnection'); if(!srec) return;
+    let room = null;
+    if(roomId){ room = await db.get('SELECT * FROM rooms WHERE id=?',[roomId]); }
+    else if(roomName){ room = await db.get('SELECT * FROM rooms WHERE name=?',[roomName]); }
+    if(!room) return socket.emit('error',{message:'Room not found'});
 
-    // broadcast left
-    const txt=`${u.username} è uscito dalla stanza`;
+    presence.get(room.id)?.delete(socket.id);
+    socket.leave(room.id);
+    if(srec.roomId===room.id) srec.roomId=null;
+
+    const txt = `${u.username} è uscito dalla stanza`;
     io.to(room.id).emit('chat:system',{ text:txt, kind:'info', ts:Date.now() });
-    io.to(roomId).emit('room:user_list', await buildUserList(roomId));
+    io.to(room.id).emit('room:user_list', await buildUserList(room.id));
   });
   // OWNER CLAIM
   socket.on('room:owner_claim', async ({roomId,password})=>{
