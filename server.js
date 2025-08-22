@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-import http from 'http';
+import https from 'https';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
@@ -18,9 +18,17 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('./uploads'));
 
-const server = http.createServer(app);
+const TLS_CERT_PATH = process.env.TLS_CERT_PATH;
+const TLS_KEY_PATH = process.env.TLS_KEY_PATH;
+if (!TLS_CERT_PATH || !TLS_KEY_PATH) {
+  throw new Error('TLS_CERT_PATH and TLS_KEY_PATH must be set');
+}
+const server = https.createServer({
+  cert: fs.readFileSync(TLS_CERT_PATH),
+  key: fs.readFileSync(TLS_KEY_PATH)
+}, app);
 const io = new Server(server, {
-  cors: { origin: ['http://localhost:5173','http://localhost:3000'], credentials: true },
+  cors: { origin: ['https://localhost:5173','https://localhost:3000'], credentials: true },
   pingInterval: 25000, pingTimeout: 20000, perMessageDeflate: false, maxHttpBufferSize: 1_000_000
 });
 
@@ -392,4 +400,4 @@ io.on('connection', async (socket)=>{
   });
 });
 
-server.listen(PORT, ()=> logger.info(`Berry Chat server running on http://localhost:${PORT}`));
+server.listen(PORT, ()=> logger.info(`Berry Chat server running on https://localhost:${PORT}`));
