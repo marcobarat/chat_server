@@ -245,6 +245,18 @@ io.on('connection', async (socket)=>{
     const ban = await db.get('SELECT * FROM room_bans WHERE room_id=? AND user_id=?',[room.id,u.id]);
     if(ban){ if(!ban.until_ts || ban.until_ts > Date.now()){ return socket.emit('error',{message:'Sei bannato da questa stanza'}); } else { await db.run('DELETE FROM room_bans WHERE room_id=? AND user_id=?',[room.id,u.id]); } }
 
+    const existing = presence.get(room.id);
+    if(existing){
+      for(const sid of Array.from(existing)){
+        const prev = sockets.get(sid);
+        if(prev && prev.userId===u.id){
+          existing.delete(sid);
+          const os = io.sockets.sockets.get(sid);
+          os?.disconnect(true);
+        }
+      }
+    }
+
     if(srec.roomId){ presence.get(srec.roomId)?.delete(socket.id); socket.leave(srec.roomId); }
     srec.roomId=room.id; srec.effectiveRole=userEffectiveRole(srec.globalRole, await getRoomRole(room.id,u.id));
     ensurePresence(room.id).add(socket.id); socket.join(room.id);
