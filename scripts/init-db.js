@@ -4,6 +4,7 @@ import { open } from 'sqlite';
 import fs from 'fs';
 import argon2 from 'argon2';
 import { v4 as uuidv4 } from 'uuid';
+import { encrypt, decrypt, getKey } from '../encryption.js';
 
 const DB_FILE = process.env.DB_FILE || './data/berrychat.db';
 fs.mkdirSync('./data', { recursive: true });
@@ -76,4 +77,23 @@ if (!byName) {
 }
 
 console.log('Database initialized at', DB_FILE);
+
+// Re-encrypt existing plaintext or rotate key if needed
+const NEW_KEY = getKey(process.env.OWNER_PASS_KEY);
+const OLD_KEY = process.env.OLD_OWNER_PASS_KEY ? getKey(process.env.OLD_OWNER_PASS_KEY) : NEW_KEY;
+const rooms = await db.all('SELECT id, owner_password FROM rooms WHERE owner_password IS NOT NULL');
+for (const r of rooms) {
+  let plain;
+  try {
+    plain = decrypt(r.owner_password, OLD_KEY);
+  } catch {
+    // assume stored as plaintext
+    plain = r.owner_password;
+  }
+  const encrypted = encrypt(plain, NEW_KEY);
+  if (encrypted !== r.owner_password) {
+    await db.run('UPDATE rooms SET owner_password=? WHERE id=?', [encrypted, r.id]);
+    console.log(`Updated owner password encryption for room ${r.id}`);
+  }
+}
 await db.close();
