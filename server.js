@@ -12,6 +12,7 @@ import argon2 from 'argon2';
 import { logger } from './logger.js';
 import multer from 'multer';
 import path from 'path';
+import { encrypt, decrypt } from './encryption.js';
 
 const app = express();
 app.use(cors());
@@ -194,8 +195,9 @@ io.on('connection', async (socket)=>{
     const srec=srecOrExit(socket,'room:create'); if(!srec) return;
     const trimmed=String(name||'').trim(); if(!trimmed) return socket.emit('error',{message:'Room name required'});
     const id=uuidv4(); const plain=randomRoomPassword(); const hash=await argon2.hash(plain,{type:argon2.argon2id});
+    const encrypted=encrypt(plain);
     await db.run('INSERT INTO rooms (id,name,description,owner_password,owner_password_hash,created_by,created_at) VALUES (?,?,?,?,?,?,?)',
-      [id,trimmed,String(description||'').trim(),plain,hash,srec.userId,Date.now()]);
+      [id,trimmed,String(description||'').trim(),encrypted,hash,srec.userId,Date.now()]);
     await db.run('INSERT INTO room_roles (room_id,user_id,role) VALUES (?,?,?)',[id,srec.userId,'owner']);
     if(srec.roomId){ presence.get(srec.roomId)?.delete(socket.id); socket.leave(srec.roomId); }
     ensurePresence(id).add(socket.id);
@@ -227,7 +229,8 @@ io.on('connection', async (socket)=>{
     else if(roomName){ room=await db.get('SELECT * FROM rooms WHERE name=?',[roomName]); }
     if(!room && createIfMissing){
       const id=uuidv4(); const plain=randomRoomPassword(); const hash=await argon2.hash(plain,{type:argon2.argon2id});
-      await db.run('INSERT INTO rooms (id,name,description,owner_password,owner_password_hash,created_by,created_at) VALUES (?,?,?,?,?,?,?)',[id,roomName,'',plain,hash,srec.userId,Date.now()]);
+      const encrypted=encrypt(plain);
+      await db.run('INSERT INTO rooms (id,name,description,owner_password,owner_password_hash,created_by,created_at) VALUES (?,?,?,?,?,?,?)',[id,roomName,'',encrypted,hash,srec.userId,Date.now()]);
       await db.run('INSERT INTO room_roles (room_id,user_id,role) VALUES (?,?,?)',[id,srec.userId,'owner']);
       room=await db.get('SELECT * FROM rooms WHERE id=?',[id]);
       socket.emit('room:owner_password',{roomId:id,password:plain});
@@ -248,7 +251,9 @@ io.on('connection', async (socket)=>{
     socket.emit('chat:history', hist.reverse().map(m => (m.kind==='chat'? { id:m.id, from:{ name:m.fromName||'system', role:m.fromRole||'user' }, text:m.text, ts:m.ts } : { id:m.id, system:true, text:m.text, kind:m.kind, ts:m.ts })));
 
     if(rankOfRole(srec.effectiveRole) >= rankOfRole('owner') && room.owner_password){
-      socket.emit('room:owner_password',{roomId:room.id,password:room.owner_password});
+      let plain = room.owner_password;
+      try { plain = decrypt(room.owner_password); } catch {}
+      socket.emit('room:owner_password',{roomId:room.id,password:plain});
     }
 
     // broadcast join
@@ -278,7 +283,9 @@ io.on('connection', async (socket)=>{
     const ok=await argon2.verify(r.owner_password_hash, String(password||'')); if(!ok) return socket.emit('error',{message:'Password errata'});
     await db.run('INSERT OR REPLACE INTO room_roles (room_id,user_id,role) VALUES (?,?,?)',[roomId,u.id,'owner']);
     srec.effectiveRole=userEffectiveRole(srec.globalRole,'owner');
-    socket.emit('room:owner_password',{roomId,password:r.owner_password});
+    let plain = r.owner_password;
+    try { plain = decrypt(r.owner_password); } catch {}
+    socket.emit('room:owner_password',{roomId,password:plain});
     io.to(roomId).emit('room:user_list', await buildUserList(roomId));
   });
 
