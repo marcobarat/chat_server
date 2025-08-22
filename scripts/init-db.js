@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS rooms (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
+  owner_password TEXT,
   owner_password_hash TEXT,
   created_by TEXT,
   created_at INTEGER NOT NULL
