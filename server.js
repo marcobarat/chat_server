@@ -149,7 +149,7 @@ app.post('/api/admin/users/:userId/global-role', assertAdmin, async (req,res)=>{
 
 app.get('/api/rooms', async (_req,res)=>{
   const rows = await db.all('SELECT id,name,description FROM rooms ORDER BY created_at DESC');
-  res.json(rows.map(r=>({id:r.id,name:r.name,description:r.description||'',occupants:(presence.get(r.id)?.size||0)})));
+  res.json(rows.map(r=>({name:r.name,description:r.description||'',occupants:(presence.get(r.id)?.size||0)})));
 });
 
 app.get('/api/rooms/resolve', async (req,res)=>{
@@ -204,8 +204,10 @@ io.on('connection', async (socket)=>{
 
     // update lists
     const rows=await db.all('SELECT id,name,description FROM rooms ORDER BY created_at DESC');
-    const mapped=rows.map(r=>({id:r.id,name:r.name,description:r.description||'',occupants:(presence.get(r.id)?.size||0)}));
-    io.emit('rooms:update',mapped); io.to('__admin').emit('admin:rooms',mapped);
+    const list=rows.map(r=>({name:r.name,description:r.description||'',occupants:(presence.get(r.id)?.size||0)}));
+    const adminList=rows.map(r=>({id:r.id,name:r.name,description:r.description||'',occupants:(presence.get(r.id)?.size||0)}));
+    io.emit('rooms:update',list);
+    io.to('__admin').emit('admin:rooms',adminList);
 
     socket.emit('room:owner_password',{roomId:id,password:plain});
     socket.emit('room:joined',{roomId:id,users:await buildUserList(id),you:{id:srec.userId,name:srec.username,role:srec.effectiveRole}});
@@ -216,7 +218,12 @@ io.on('connection', async (socket)=>{
   // LIST
   socket.on('room:list', async ()=>{
     const rows=await db.all('SELECT id,name,description FROM rooms ORDER BY created_at DESC');
-    socket.emit('rooms:list', rows.map(r=>({id:r.id,name:r.name,description:r.description||'',occupants:(presence.get(r.id)?.size||0)})));
+    const list=rows.map(r=>({name:r.name,description:r.description||'',occupants:(presence.get(r.id)?.size||0)}));
+    socket.emit('rooms:list', list);
+    if(u.global_role==='admin'){
+      const adminList=rows.map(r=>({id:r.id,name:r.name,description:r.description||'',occupants:(presence.get(r.id)?.size||0)}));
+      socket.emit('admin:rooms', adminList);
+    }
   });
 
   // JOIN
